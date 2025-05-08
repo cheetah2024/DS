@@ -1,0 +1,51 @@
+Assignment 3: Develop a DS to find sum of 'N' elements in an array by distributing N/n elememts to 'n' no. of processors MPI or OpenMP
+
+
+File Name: sum_array_mpi.c
+
+
+#include <mpi.h>
+#include <stdio.h>
+
+#define SIZE 5
+
+int main(int argc, char* argv[]) {
+    int rank, size;
+    int data[SIZE] = {1,2,3,4,5}; 
+    int local_sum = 0, total_sum = 0;
+    int elements_per_proc;
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);  // process ID
+    MPI_Comm_size(MPI_COMM_WORLD, &size);  // total number of processes
+
+    elements_per_proc = SIZE/size;
+    int local_data[elements_per_proc];
+
+    // Scatter the data to all processes
+    MPI_Scatter(data, elements_per_proc, MPI_INT,
+                local_data, elements_per_proc, MPI_INT,
+                0, MPI_COMM_WORLD);
+
+    // Each process computes its partial sum
+    for (int i = 0; i < elements_per_proc; i++) {
+        local_sum += local_data[i];
+    }
+
+    // Gather all partial sums to the root process
+    MPI_Reduce(&local_sum, &total_sum, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    if (rank == 0) {
+        printf("Total Sum = %d\n", total_sum);
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+
+
+Commands: 
+1. open terminal 
+2. sudo apt install mpich 
+3. mpicc sum_array_mpi.c -o sum_array_mpi
+4. mpirun -np 4 ./sum_array_mpi
