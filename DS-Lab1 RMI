@@ -93,3 +93,15 @@ public class Client{
     }
 
 }
+
+
+COMMANDS TO RUN:
+1. Save all files in 1 folder
+2. Open same folder/directory in terminal 
+3. Commands:
+javac *.java 
+rmiregistry
+
+4. Dont close the terminal and open new terminal tab, command:  java Server
+5. Dont close last 2 terminals, open new terminal tab, command: java Client
+
