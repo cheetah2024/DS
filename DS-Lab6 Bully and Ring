@@ -1,0 +1,100 @@
+Assignment 6:  Implement Bully and Ring ALgorithm for Leader Election.
+
+
+File 1:  BullyAlgorithm.java
+
+import java.util.*;
+
+class BullyNode {
+    int id;
+    boolean isAlive;
+
+    BullyNode(int id) {
+        this.id = id;
+        this.isAlive = true;
+    }
+
+    void startElection(List<BullyNode> nodes) {
+        System.out.println("Node " + id + " starts election.");
+        boolean higherExists = false;
+
+        for (BullyNode node : nodes) {
+            if (node.id > this.id && node.isAlive) {
+                System.out.println("Node " + id + " sends election message to Node " + node.id);
+                higherExists = true;
+            }
+        }
+
+        if (!higherExists) {
+            System.out.println("Node " + id + " becomes the coordinator.");
+        } else {
+            System.out.println("Node " + id + " waits for higher node to take over.");
+        }
+    }
+}
+
+public class BullyAlgorithm {
+    public static void main(String[] args) {
+        List<BullyNode> nodes = new ArrayList<>();
+        for (int i = 1; i <= 5; i++) nodes.add(new BullyNode(i));
+
+        // Simulate node 5 (highest) failure
+        nodes.get(4).isAlive = false;
+
+        // Node 3 detects failure and starts election
+        nodes.get(2).startElection(nodes);
+    }
+}
+
+---------------------------------------------------
+
+File 2:  RingAlgorithm.java
+
+import java.util.*;
+
+class RingNode {
+    int id;
+    boolean isAlive;
+
+    RingNode(int id) {
+        this.id = id;
+        this.isAlive = true;
+    }
+}
+
+public class RingAlgorithm {
+    public static void main(String[] args) {
+        List<RingNode> nodes = new ArrayList<>();
+        for (int i = 1; i <= 5; i++) nodes.add(new RingNode(i));
+
+        // Simulate failure of coordinator (node 5)
+        nodes.get(4).isAlive = false;
+
+        int initiator = 2;
+        System.out.println("Node " + initiator + " starts ring election.");
+        int maxId = nodes.get(initiator - 1).id;
+
+        int index = initiator % nodes.size();
+        while (index != initiator - 1) {
+            if (nodes.get(index).isAlive) {
+                System.out.println("Message passed to Node " + nodes.get(index).id);
+                maxId = Math.max(maxId, nodes.get(index).id);
+            }
+            index = (index + 1) % nodes.size();
+        }
+
+        System.out.println("Node " + maxId + " is elected as coordinator.");
+    }
+}
+---------------------------------------
+COMMANDS TO RUN:
+1. open terminal, execute bully 
+javac BullyAlgorithm.java 
+java BullyAlgorithm
+
+2. open terminal, execute ring 
+javac RingAlgorithm.java
+java RingAlgorithm
+
+
+
