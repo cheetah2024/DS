@@ -1,0 +1,86 @@
+Assignment 2: Distributed Applications using CORBA to demonstrate object brokering. (Calculator or String operation)
+
+
+File 1:  Hello.idl
+
+interface Hello {
+    string sayHello();
+};
+
+-----------------------------------------------
+
+File 2:  HelloServer.java
+
+import HelloApp.*;
+import org.omg.CORBA.*;
+import org.omg.PortableServer.*;
+import org.omg.CosNaming.*;
+
+public class HelloServer {
+    public static void main(String args[]) {
+        try {
+            ORB orb = ORB.init(args, null);
+            POA rootpoa = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
+            rootpoa.the_POAManager().activate();
+
+            HelloImpl helloImpl = new HelloImpl();
+            org.omg.CORBA.Object ref = rootpoa.servant_to_reference(helloImpl);
+            Hello href = HelloHelper.narrow(ref);
+
+            org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+            NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+            NameComponent path[] = ncRef.to_name("HelloService");
+            ncRef.rebind(path, href);
+
+            System.out.println("Server ready...");
+            orb.run();
+        } catch (Exception e) {
+            System.out.println("ERROR: " + e);
+        }
+    }
+}
+
+class HelloImpl extends HelloPOA {
+    public String sayHello() {
+        return "Hello from CORBA Server!";
+    }
+}
+-----------------------------------------------------------
+
+File 3:  HelloClient.java
+
+import HelloApp.*;
+import org.omg.CORBA.*;
+import org.omg.CosNaming.*;
+
+public class HelloClient {
+    public static void main(String args[]) {
+        try {
+            ORB orb = ORB.init(args, null);
+            org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+            NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+
+            Hello helloRef = HelloHelper.narrow(ncRef.resolve_str("HelloService"));
+            String response = helloRef.sayHello();
+            System.out.println("Server replied: " + response);
+        } catch (Exception e) {
+            System.out.println("ERROR: " + e);
+        }
+    }
+}
+
+---------------------------------------------------------------
+
+Commands to run: 
+1. to run on terminal on same folder/ directory
+
+idlj -fall Hello.idl
+javac HelloApp/*.java HelloServer.java HelloClient.java
+tnameserv -ORBInitialPort 1050
+java HelloServer -ORBInitialPort 1050 -ORBInitialHost localhost
+java HelloClient -ORBInitialPort 1050 -ORBInitialHost localhost
+
+2. Expected output: 
+HelloServer ready and waiting..
+Server says: Hello from CORBA Server!
+
