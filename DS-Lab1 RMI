@@ -1,0 +1,95 @@
+ASSIGNMENT 1: Implement multi-threaded client/server process communication using RMI.
+
+File 1:  ServerIntf.java
+
+import java.rmi.*;
+
+
+interface ServerIntf extends Remote{
+           public double Addition(double num1 , double num2) throws Exception;
+           public double Substraction(double num1 , double num2) throws Exception;
+           public double Multiplication(double num1 , double num2) throws Exception;
+           public double Division(double num1 , double num2) throws Exception;
+}
+
+—--------------------------------------------
+
+File 2:  ServerImpl.java
+
+import java.rmi.*;
+import java.rmi.server.*;
+public class ServerImpl extends UnicastRemoteObject implements ServerIntf{
+       public ServerImpl() throws RemoteException{
+       }
+       public double Addition(double num1 , double num2){
+              return num1+num2;
+       }
+       public double Substraction(double num1 , double num2){
+              return num1-num2;
+       }
+       public double Multiplication(double num1 , double num2){
+              return num1*num2;
+       }
+       public double Division(double num1 , double num2){
+           if(num2 != 0){
+               return num1/num2;
+           }
+           else{
+               System.out.println("cannot divide  a number by zero");
+           }
+              return num1/num2;
+       }
+}
+
+---------------------------------------------------------
+
+File 3:  Server.java
+
+import java.rmi.*;
+
+public class Server{
+   public static void main(String[] args){
+          try{
+          ServerImpl serverImpl =new ServerImpl();
+          Naming.rebind("Server" , serverImpl);
+        
+          System.out.println("server is Started");  
+          }
+          catch(Exception e){
+            System.out.println("server occurred at server"+ e.getMessage());
+          }
+   }
+}
+
+—--------------------------------------------
+
+File 4:  Client.java
+
+import java.rmi.*;
+import java.util.Scanner;
+
+public class Client{
+    public static void main(String[] args){
+             Scanner sc= new Scanner(System.in);
+       try{
+         String serverURL="rmi://localhost/Server";
+         ServerIntf serverIntf=(ServerIntf) Naming.lookup(serverURL);
+         System.out.println("enter first number:");
+         double num1=sc.nextDouble();       
+         System.out.println("enter second number:");
+         double num2=sc.nextDouble();
+                  
+         System.out.println("first number:"+num1);
+         System.out.println("second number:"+num2);
+         System.out.println("..................RESULT...................");
+         System.out.println("Addition is"+ serverIntf.Addition(num1,num2));
+         System.out.println("Subtraction is"+ serverIntf.Substraction(num1,num2));
+         System.out.println("multiplication is"+ serverIntf.Multiplication(num1,num2));
+         System.out.println("division is" + serverIntf.Division(num1,num2));
+       }
+       catch(Exception e){
+        System.out.println("client occurred at client"+ e.getMessage());
+       }
+    }
+
+}
