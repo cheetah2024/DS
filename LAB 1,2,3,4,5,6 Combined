@@ -1,0 +1,569 @@
+ASSIGNMENT 1: Implement multi-threaded client/server process communication using RMI.
+
+File 1:  ServerIntf.java
+import java.rmi.*;
+interface ServerIntf extends Remote{
+           public double Addition(double num1 , double num2) throws Exception;
+           public double Substraction(double num1 , double num2) throws Exception;
+           public double Multiplication(double num1 , double num2) throws Exception;
+           public double Division(double num1 , double num2) throws Exception;
+}
+—--------------------------------------------
+File 2:  ServerImpl.java
+import java.rmi.*;
+import java.rmi.server.*;
+public class ServerImpl extends UnicastRemoteObject implements ServerIntf{
+       public ServerImpl() throws RemoteException{
+       }
+       public double Addition(double num1 , double num2){
+              return num1+num2;
+       }
+       public double Substraction(double num1 , double num2){
+              return num1-num2;
+       }
+       public double Multiplication(double num1 , double num2){
+              return num1*num2;
+       }
+       public double Division(double num1 , double num2){
+           if(num2 != 0){
+               return num1/num2;
+           }
+           else{
+               System.out.println("cannot divide  a number by zero");
+           }
+              return num1/num2;
+       }
+}
+—------------------------------------
+File 3:  Server.java
+import java.rmi.*;
+public class Server{
+   public static void main(String[] args){
+          try{
+          ServerImpl serverImpl =new ServerImpl();
+          Naming.rebind("Server" , serverImpl);
+          System.out.println("server is Started");  
+          }
+          catch(Exception e){
+            System.out.println("server occurred at server"+ e.getMessage());
+          }
+   }
+}
+
+File 4:  Client.java
+
+import java.rmi.*;
+import java.util.Scanner;
+public class Client{
+    public static void main(String[] args){
+             Scanner sc= new Scanner(System.in);
+       try{
+         String serverURL="rmi://localhost/Server";
+         ServerIntf serverIntf=(ServerIntf) Naming.lookup(serverURL);
+         System.out.println("enter first number:");
+         double num1=sc.nextDouble();       
+         System.out.println("enter second number:");
+         double num2=sc.nextDouble();
+                  
+         System.out.println("first number:"+num1);
+         System.out.println("second number:"+num2);
+         System.out.println("..................RESULT...................");
+         System.out.println("Addition is"+ serverIntf.Addition(num1,num2));
+         System.out.println("Subtraction is"+ serverIntf.Substraction(num1,num2));
+         System.out.println("multiplication is"+ serverIntf.Multiplication(num1,num2));
+         System.out.println("division is" + serverIntf.Division(num1,num2));
+       }
+       catch(Exception e){
+        System.out.println("client occurred at client"+ e.getMessage());
+       }
+    }
+}
+—-------------------------------------------------------------------
+COMMANDS TO RUN:
+1. Save all files in 1 folder
+2. Open same folder/directory in terminal 
+3. Commands:
+
+javac *.java 
+rmiregistry
+
+4. Dont close the terminal and open new terminal tab, command:  java Server
+5. Dont close last 2 terminals, open new terminal tab, command: java Client
+
+##################################################################################################################################
+Assignment 2: Distributed Applications using CORBA to demonstrate object brokering. (Calculator or String operation)
+
+
+File 1:  Hello.idl
+
+interface Hello {
+    string sayHello();
+};
+-----------------------------------------------
+File 2:  HelloServer.java
+
+import HelloApp.*;
+import org.omg.CORBA.*;
+import org.omg.PortableServer.*;
+import org.omg.CosNaming.*;
+
+public class HelloServer {
+    public static void main(String args[]) {
+        try {
+            ORB orb = ORB.init(args, null);
+            POA rootpoa = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
+            rootpoa.the_POAManager().activate();
+
+            HelloImpl helloImpl = new HelloImpl();
+            org.omg.CORBA.Object ref = rootpoa.servant_to_reference(helloImpl);
+            Hello href = HelloHelper.narrow(ref);
+
+            org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+            NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+            NameComponent path[] = ncRef.to_name("HelloService");
+            ncRef.rebind(path, href);
+
+            System.out.println("Server ready...");
+            orb.run();
+        } catch (Exception e) {
+            System.out.println("ERROR: " + e);
+        }
+    }
+}
+
+class HelloImpl extends HelloPOA {
+    public String sayHello() {
+        return "Hello from CORBA Server!";
+    }
+}
+-----------------------------------------------------------
+
+File 3:  HelloClient.java
+
+import HelloApp.*;
+import org.omg.CORBA.*;
+import org.omg.CosNaming.*;
+
+public class HelloClient {
+    public static void main(String args[]) {
+        try {
+            ORB orb = ORB.init(args, null);
+            org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+            NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+
+            Hello helloRef = HelloHelper.narrow(ncRef.resolve_str("HelloService"));
+            String response = helloRef.sayHello();
+            System.out.println("Server replied: " + response);
+        } catch (Exception e) {
+            System.out.println("ERROR: " + e);
+        }
+    }
+}
+
+---------------------------------------------------------------
+
+Commands to run: 
+1. to run on terminal on same folder/ directory
+
+idlj -fall Hello.idl
+javac HelloApp/*.java HelloServer.java HelloClient.java
+tnameserv -ORBInitialPort 1050
+java HelloServer -ORBInitialPort 1050 -ORBInitialHost localhost
+java HelloClient -ORBInitialPort 1050 -ORBInitialHost localhost
+
+2. Expected output: 
+HelloServer ready and waiting..
+Server says: Hello from CORBA Server!
+
+################################################################################################################################
+Assignment 3: Develop a DS to find sum of 'N' elements in an array by distributing N/n elememts to 'n' no. of processors MPI or OpenMP
+
+File Name: sum_array_mpi.c
+
+#include <mpi.h>
+#include <stdio.h>
+
+#define SIZE 5
+
+int main(int argc, char* argv[]) {
+    int rank, size;
+    int data[SIZE] = {1,2,3,4,5}; 
+    int local_sum = 0, total_sum = 0;
+    int elements_per_proc;
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);  // process ID
+    MPI_Comm_size(MPI_COMM_WORLD, &size);  // total number of processes
+
+    elements_per_proc = SIZE/size;
+    int local_data[elements_per_proc];
+
+    // Scatter the data to all processes
+    MPI_Scatter(data, elements_per_proc, MPI_INT,
+                local_data, elements_per_proc, MPI_INT,
+                0, MPI_COMM_WORLD);
+
+    // Each process computes its partial sum
+    for (int i = 0; i < elements_per_proc; i++) {
+        local_sum += local_data[i];
+    }
+    // Gather all partial sums to the root process
+    MPI_Reduce(&local_sum, &total_sum, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    if (rank == 0) {
+        printf("Total Sum = %d\n", total_sum);
+    }
+    MPI_Finalize();
+    return 0;
+}
+—--------------------------------------------------------------------
+Commands: 
+1. open terminal 
+2. sudo apt install mpich 
+3. mpicc sum_array_mpi.c -o sum_array_mpi
+4. mpirun -np 4 ./sum_array_mpi
+
+#########################################################################################################################################
+Assignment 4: Berkley Algorithm for clock synchronization.
+
+File 1:  Server.py
+
+from functools import reduce
+from dateutil import parser
+import threading
+import datetime
+import socket
+import time
+
+# datastructure used to store client address and clock data
+client_data = {}
+
+''' nested thread function used to receive
+clock time from a connected client '''
+def startReceivingClockTime(connector, address):
+while True:
+# receive clock time
+clock_time_string = connector.recv(1024).decode()
+clock_time = parser.parse(clock_time_string)
+clock_time_diff = datetime.datetime.now() - \
+clock_time
+
+client_data[address] = {
+"clock_time" : clock_time,
+"time_difference" : clock_time_diff,
+"connector" : connector
+}
+print("Client Data updated with: "+ str(address),
+
+end = "\n\n")
+
+time.sleep(5)
+
+''' master thread function used to open portal for
+accepting clients over given port '''
+def startConnecting(master_server):
+# fetch clock time at slaves / clients
+while True:
+# accepting a client / slave clock client
+master_slave_connector, addr = master_server.accept()
+slave_address = str(addr[0]) + ":" + str(addr[1])
+print(slave_address + " got connected successfully")
+current_thread = threading.Thread(
+target = startReceivingClockTime,
+args = (master_slave_connector,
+slave_address, ))
+
+current_thread.start()
+
+# subroutine function used to fetch average clock difference
+def getAverageClockDiff():
+current_client_data = client_data.copy()
+time_difference_list = list(client['time_difference']
+
+for client_addr, client
+in client_data.items())
+
+sum_of_clock_difference = sum(time_difference_list, \
+
+datetime.timedelta(0, 0))
+
+average_clock_difference = sum_of_clock_difference \
+
+/ len(client_data)
+return average_clock_difference
+
+''' master sync thread function used to generate
+cycles of clock synchronization in the network '''
+def synchronizeAllClocks():
+while True:
+print("New synchronization cycle started.")
+print("Number of clients to be synchronized: " + \
+
+str(len(client_data)))
+
+if len(client_data) > 0:
+average_clock_difference = getAverageClockDiff()
+for client_addr, client in client_data.items():
+try:
+synchronized_time = \
+datetime.datetime.now() + \
+average_clock_difference
+client['connector'].send(str(
+synchronized_time).encode())
+except Exception as e:
+print("Something went wrong while " + \
+"sending synchronized time " + \
+"through " + str(client_addr))
+
+else :
+print("No client data." + \
+" Synchronization not applicable.")
+print("\n\n")
+time.sleep(5)
+
+# function used to initiate the Clock Server / Master Node
+def initiateClockServer(port = 8080):
+master_server = socket.socket()
+master_server.setsockopt(socket.SOL_SOCKET,
+socket.SO_REUSEADDR, 1)
+print("Socket at master node created successfully\n")
+master_server.bind(('', port))
+# Start listening to requests
+master_server.listen(10)
+print("Clock server started...\n")
+# start making connections
+print("Starting to make connections...\n")
+master_thread = threading.Thread(
+target = startConnecting,
+args = (master_server, ))
+
+master_thread.start()
+# start synchronization
+print("Starting synchronization parallelly...\n")
+sync_thread = threading.Thread(
+
+target = synchronizeAllClocks,
+args = ())
+sync_thread.start()
+
+# Driver function
+if _name_ == '_main_':
+# Trigger the Clock Server
+initiateClockServer(port = 8080)
+
+-------------------------------------------------------------
+
+File 2: client.py
+
+
+from timeit import default_timer as timer
+from dateutil import parser
+import threading
+import datetime
+import socket
+
+import time
+
+# client thread function used to send time at client side
+def startSendingTime(slave_client):
+while True:
+# provide server with clock time at the client
+slave_client.send(str(
+datetime.datetime.now()).encode())
+print("Recent time sent successfully",
+end = "\n\n")
+
+time.sleep(5)
+
+# client thread function used to receive synchronized time
+def startReceivingTime(slave_client):
+while True:
+# receive data from the server
+Synchronized_time = parser.parse(
+slave_client.recv(1024).decode())
+print("Synchronized time at the client is: " + \
+str(Synchronized_time),
+end = "\n\n")
+
+# function used to Synchronize client process time
+def initiateSlaveClient(port = 8080):
+slave_client = socket.socket()
+# connect to the clock server on local computer
+slave_client.connect(('127.0.0.1', port))
+# start sending time to server
+print("Starting to receive time from server\n")
+send_time_thread = threading.Thread(
+target = startSendingTime,
+args = (slave_client, ))
+send_time_thread.start()
+
+# start receiving synchronized from server
+print("Starting to receiving " + \
+
+"synchronized time from server\n")
+receive_time_thread = threading.Thread(
+target = startReceivingTime,
+args = (slave_client, ))
+receive_time_thread.start()
+
+# Driver function
+if _name_ == '_main_':
+
+# initialize the Slave / Client
+initiateSlaveClient(port = 8080)
+
+--------------------------------
+
+Commands to run:
+
+1. save files in same folder, open terminal for same directory/folder and run following commands: 
+
+sudo apt update
+sudo apt install python3
+sudo apt install python3-pip
+chmod +x server.py
+python3 client.py
+python3 server.py
+
+##############################################################################################################################
+Assignment 5: Token ring based Mutual Exclusion algorithm
+
+File name:  TokenRing.java
+
+import java.util.Scanner;
+
+public class TokenRing{
+     public static void main(String[] args){
+     Scanner sc = new Scanner(System.in);
+     System.out.println("enter the number of node:");
+     int n =sc.nextInt();
+     int Tokenholder = 0;
+     
+     while(true){
+        System.out.println("enter sender node ( 0  to " + (n-1) + "):" );
+        int sender=sc.nextInt();
+        System.out.println("enter receiver node ( 0  to " + (n-1) + "):" );
+        int receiver=sc.nextInt();
+        System.out.println("enter data to send");
+        String data=sc.next();
+        System.out.println("token path");
+        for(int i=Tokenholder;i!=sender;i=(n+1)%n)
+            System.out.println(i + "-> ");
+            System.out.println(sender);
+            System.out.println("Sender" + sender + "is sending data :"+ data);
+        for(int i=(sender+1)%n;i!=receiver;i=(n+1)%n)
+            System.out.println("node " + i + "forwarding data is:" + data);
+            System.out.println("Receiver" + receiver + "is received data" + data);
+            Tokenholder=sender;
+            System.out.println("Do you want to send again? (1=Yes , 0=No :");
+            int choice =sc.nextInt();
+            if(choice != 1)
+               break;
+
+     }
+         sc.close(); 
+     }
+}
+—------------------------------------------------------
+Commands: 
+1. commands on terminal(open same directory/folder on terminal)
+javac TokenRing.java
+java tokenring
+no of nodes: 2 
+sender 0
+reciever 1
+
+#########################################################################################################################################
+Assignment 6:  Implement Bully and Ring ALgorithm for Leader Election.
+
+File 1:  BullyAlgorithm.java
+
+import java.util.*;
+
+class BullyNode {
+    int id;
+    boolean isAlive;
+    BullyNode(int id) {
+        this.id = id;
+        this.isAlive = true;
+    }
+    void startElection(List<BullyNode> nodes) {
+        System.out.println("Node " + id + " starts election.");
+        boolean higherExists = false;
+
+        for (BullyNode node : nodes) {
+            if (node.id > this.id && node.isAlive) {
+                System.out.println("Node " + id + " sends election message to Node " + node.id);
+                higherExists = true;
+            }
+        }
+
+        if (!higherExists) {
+            System.out.println("Node " + id + " becomes the coordinator.");
+        } else {
+            System.out.println("Node " + id + " waits for higher node to take over.");
+        }
+    }
+}
+
+public class BullyAlgorithm {
+    public static void main(String[] args) {
+        List<BullyNode> nodes = new ArrayList<>();
+        for (int i = 1; i <= 5; i++) nodes.add(new BullyNode(i));
+
+        // Simulate node 5 (highest) failure
+        nodes.get(4).isAlive = false;
+
+        // Node 3 detects failure and starts election
+        nodes.get(2).startElection(nodes);
+    }
+}
+
+---------------------------------------------------
+
+File 2:  RingAlgorithm.java
+
+import java.util.*;
+
+class RingNode {
+    int id;
+    boolean isAlive;
+
+    RingNode(int id) {
+        this.id = id;
+        this.isAlive = true;
+    }
+}
+
+public class RingAlgorithm {
+    public static void main(String[] args) {
+        List<RingNode> nodes = new ArrayList<>();
+        for (int i = 1; i <= 5; i++) nodes.add(new RingNode(i));
+
+        // Simulate failure of coordinator (node 5)
+        nodes.get(4).isAlive = false;
+
+        int initiator = 2;
+        System.out.println("Node " + initiator + " starts ring election.");
+        int maxId = nodes.get(initiator - 1).id;
+
+        int index = initiator % nodes.size();
+        while (index != initiator - 1) {
+            if (nodes.get(index).isAlive) {
+                System.out.println("Message passed to Node " + nodes.get(index).id);
+                maxId = Math.max(maxId, nodes.get(index).id);
+            }
+            index = (index + 1) % nodes.size();
+        }
+
+        System.out.println("Node " + maxId + " is elected as coordinator.");
+    }
+}
+---------------------------------------
+COMMANDS TO RUN:
+1. open terminal, execute bully 
+javac BullyAlgorithm.java 
+java BullyAlgorithm
+
+2. open terminal, execute ring 
+javac RingAlgorithm.java
+java RingAlgorithm
