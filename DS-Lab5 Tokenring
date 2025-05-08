@@ -1,0 +1,60 @@
+Assignment 5: Token ring based Mutual Exclusion algorithm
+
+
+File name:  TokenRing.java
+
+
+import java.util.Scanner;
+
+public class TokenRing{
+     public static void main(String[] args){
+     Scanner sc = new Scanner(System.in);
+     
+     System.out.println("enter the number of node:");
+     int n =sc.nextInt();
+     int Tokenholder = 0;
+     
+     while(true){
+     
+        System.out.println("enter sender node ( 0  to " + (n-1) + "):" );
+        int sender=sc.nextInt();
+        System.out.println("enter receiver node ( 0  to " + (n-1) + "):" );
+        int receiver=sc.nextInt();
+        System.out.println("enter data to send");
+        String data=sc.next();
+        
+        System.out.println("token path");
+        for(int i=Tokenholder;i!=sender;i=(n+1)%n)
+            System.out.println(i + "-> ");
+            System.out.println(sender);
+            
+            System.out.println("Sender" + sender + "is sending data :"+ data);
+        for(int i=(sender+1)%n;i!=receiver;i=(n+1)%n)
+            System.out.println("node " + i + "forwarding data is:" + data);
+            
+            
+            System.out.println("Receiver" + receiver + "is received data" + data);
+            Tokenholder=sender;
+            
+            System.out.println("Do you want to send again? (1=Yes , 0=No :");
+            int choice =sc.nextInt();
+            if(choice != 1)
+               break;
+
+     }
+    
+     sc.close();
+     
+     }
+
+}
+
+Commands: 
+1. commands on terminal(open same directory/folder on terminal)
+
+javac TokenRing.java
+java tokenring
+
+no of nodes: 2 
+sender 0
+reciever 1
