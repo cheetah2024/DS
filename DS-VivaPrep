@@ -1,0 +1,294 @@
+✅ 1. Multi-threaded Client/Server using RMI (Java)
+Remote Method Invocation (RMI) enables calling methods on an object running in another JVM (on a different machine). The assignment implements a calculator using multi-threaded RMI where multiple clients can invoke methods simultaneously.
+
+⚙️ Execution Steps:
+Write 4 Java files: ServerIntf, ServerImpl, Server, Client.
+Compile all: javac *.java
+Start registry: rmiregistry (in one terminal)
+Start server: java Server (second terminal)
+Start client: java Client (third terminal)
+
+🧠 Viva Questions:
+Q1. Explain the purpose of ServerIntf.java.
+It's the remote interface that declares the methods a client can invoke remotely.
+Must extend java.rmi.Remote.
+Q2. Why does ServerImpl.java extend UnicastRemoteObject?
+It allows the object to be exported to receive incoming RMI calls.
+Q3. What is Naming.rebind() used for in Server.java?
+It binds the remote object to the RMI registry with a name so clients can look it up.
+Q4. How is multithreading achieved?
+Java RMI spawns a new thread to handle each remote method call.
+So multiple clients can access services simultaneously.
+Q5. What is the role of rmiregistry?
+It acts as a directory for clients to look up remote objects by name.
+Q6. What happens if division by zero is attempted?
+The server prints an error message but still attempts division. Needs a fix (e.g., throw exception).
+
+📌 1. RMI Calculator – Code-Level Viva Questions
+📄 Files: ServerIntf.java, ServerImpl.java, Server.java, Client.java
+
+Q1. Why do methods in ServerIntf throw Exception or RemoteException?
+All remote methods must declare throws RemoteException because RMI operations involve network communication which may fail.
+It’s a checked exception, so it's mandatory.
+
+Q2. What happens if you remove extends UnicastRemoteObject from ServerImpl?
+You get a java.rmi.server.ExportException.
+The object won’t be exported and clients can’t call it remotely.
+
+Q3. Why is the object registered with Naming.rebind()?
+It makes the remote object available in the RMI registry under a name ("Server").
+Clients use this name to lookup the remote object.
+
+Q4. In Client.java, what does Naming.lookup("rmi://localhost/Server") do?
+It contacts the RMI registry running on localhost.
+Retrieves the stub of the remote object named "Server".
+
+Q5. What change is needed in Division() to prevent division by 0 crash?
+if (num2 == 0) throw new ArithmeticException("Cannot divide by zero");
+Currently, it tries to divide anyway, which may cause incorrect output.
+_____________________________________________________________________
+✅ 2. CORBA – Distributed Calculator with Object Brokering
+CORBA (Common Object Request Broker Architecture) allows communication between objects in different languages. Here, you build a CORBA-based Hello server and client using IDL and Java.
+
+⚙️ Execution Steps:
+Write Hello.idl, generate stubs using: idlj -fall Hello.idl
+Compile all Java files.
+Start name service: tnameserv -ORBInitialPort 1050
+Run server and client with appropriate ORB flags.
+
+🧠 Viva Questions:
+Q1. What is the role of .idl file?
+It defines the remote object interface in a language-neutral way.
+CORBA uses it to generate stubs and skeletons.
+
+Q2. What is the ORB and what does it do?
+Object Request Broker handles locating remote objects, communication, and invocation.
+
+Q3. How does the client locate the server?
+Uses NamingContextExt to resolve a string name ("HelloService") into a CORBA object reference.
+
+Q4. Difference between CORBA and RMI?
+Feature
+RMI
+CORBA
+Language
+Java only
+Language-neutral
+Interface
+Java Interface
+IDL
+Middleware
+Java RMI registry
+ORB
+
+📌 2. CORBA Hello App – Code-Specific Viva Questions
+📄 Files: Hello.idl, HelloServer.java, HelloClient.java, HelloImpl.java
+
+Q1. What does idlj -fall Hello.idl generate?
+It generates:
+HelloPOA.java (skeleton)
+HelloHelper.java, HelloOperations.java (client/server utility classes)
+Interface binding classes in the HelloApp package
+
+Q2. Why use POAHelper.narrow(...) in server?
+It narrows a generic CORBA object to a POA (Portable Object Adapter), which allows activating and managing CORBA objects.
+
+Q3. What does NamingContextExt do in HelloClient?
+Provides methods like resolve_str for name-based lookup of CORBA services.
+
+Q4. Explain this line from server:
+Hello href = HelloHelper.narrow(ref);
+Converts a general CORBA object reference to a specific Hello type so methods can be invoked.
+
+Q5. Where is actual logic of sayHello() written?
+In HelloImpl which extends HelloPOA and overrides the method.
+_____________________________________________________________________
+✅ 3. Distributed Sum using MPI
+Divides a global array of N elements among n processors using MPI. Each processor computes its local sum, and the root processor computes the total sum using MPI_Reduce.
+
+⚙️ Execution Steps:
+Install MPI (sudo apt install mpich).
+Compile: mpicc sum_array_mpi.c -o sum_array_mpi
+Run: mpirun -np 4 ./sum_array_mpi
+
+🧠 Viva Questions:
+Q1. What is MPI_Scatter and MPI_Reduce?
+MPI_Scatter: Distributes chunks of data to all processes.
+MPI_Reduce: Collects partial results (sums) into one final result at root.
+
+Q2. What happens inside each processor?
+Each one calculates the sum of its portion of the array and sends it to root.
+
+Q3. Why is parallel processing important here?
+Reduces computation time.
+Efficient in large-scale data processing.
+
+Q4. What’s the difference between MPI and OpenMP?
+MPI: Message passing for distributed memory (across computers).
+OpenMP: Thread-based parallelism for shared memory (same machine).
+
+📌 3. MPI Array Sum – Code-Specific Viva
+📄 File: sum_array_mpi.c
+Q1. What does MPI_Comm_rank do?
+Determines the rank (ID) of the current process in the communicator.
+Used to assign chunks of the array.
+
+Q2. Why use MPI_Scatter?
+MPI_Scatter(data, elements_per_proc, MPI_INT, local_data, elements_per_proc, MPI_INT, 0, MPI_COMM_WORLD);
+Distributes parts of the array from the root (process 0) to all other processes.
+
+Q3. What happens in MPI_Reduce?
+MPI_Reduce(&local_sum, &total_sum, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+Gathers all local sums from processes and adds them to get the total_sum at the root process.
+
+Q4. What if SIZE isn’t divisible by size?
+The program may produce incorrect results or segmentation faults.
+Solution: pad array or handle remainder separately.
+_____________________________________________________________________
+✅ 4. Berkeley Algorithm for Clock Synchronization
+A server (master) synchronizes clocks of clients (slaves) by averaging their clock differences and adjusting them.
+
+⚙️ Execution Steps:
+Install Python + pip + dateutil.
+Run server.py and then client.py in different terminals.
+
+🧠 Viva Questions:
+Q1. Why is clock synchronization required?
+To maintain consistency across timestamps in distributed systems.
+
+Q2. Explain Berkeley Algorithm.
+Master polls clients for their time.
+Computes average time difference.
+Sends adjusted time to all clients.
+
+Q3. How is this different from Cristian’s algorithm?
+Cristian’s uses an external time source (NTP server).
+Berkeley computes average from internal clocks.
+
+Q4. How is threading used in this implementation?
+Separate threads handle client communication and synchronization loops.
+ 
+📌4. Berkeley Clock Sync – Code Questions
+📄 Files: server.py, client.py
+Q1. Why is threading used?
+To allow the server to simultaneously:
+Accept multiple clients.
+Receive their times.
+Send synchronized time updates.
+
+Q2. Why is time difference calculated as:
+clock_time_diff = datetime.datetime.now() - clock_time
+To get the offset of the client clock relative to the server’s.
+Used to calculate the average difference.
+
+Q3. Explain the purpose of getAverageClockDiff().
+Gathers time differences from all clients.
+Computes the mean offset to apply to all.
+
+Q4. How is time sent between server and client?
+As encoded strings over TCP sockets.
+Received and parsed using dateutil.parser.
+_____________________________________________________________________
+✅ 5. Token Ring Mutual Exclusion
+Simulates token passing in a logical ring. Only the process holding the token can send data (enter critical section).
+
+⚙️ Execution Steps:
+Compile: javac TokenRing.java
+Run: java TokenRing
+Input number of nodes, sender, receiver, and data.
+
+🧠 Viva Questions:
+Q1. What is the Token Ring algorithm?
+A token circulates among processes in a ring. Only token holder can access the shared resource.
+
+Q2. What problem does it solve?
+Mutual exclusion in distributed systems without central coordination.
+
+Q3. What if the token is lost?
+A token regeneration algorithm must be implemented.
+
+Q4. Advantages:
+Fair access, no starvation, bounded waiting.
+
+📌 5. Token Ring Algorithm – Code Questions
+📄 File: TokenRing.java
+Q1. What is the role of Tokenholder?
+Keeps track of the process that currently holds the token and controls the flow.
+
+Q2. What does this loop do?
+for (int i = Tokenholder; i != sender; i = (i + 1) % n)
+Simulates the token being passed from current holder to sender.
+
+Q3. How does it simulate data transfer?
+After sender receives the token, it “sends” data through nodes until the receiver gets it.
+
+Q4. What would you change to handle more realistic critical section requests?
+Add requestCS() and releaseCS() methods.
+Store a request queue or state flags.
+_____________________________________________________________________
+
+
+✅ 6. Bully and Ring Election Algorithms
+When a coordinator fails, a new leader must be elected. Bully and Ring algorithms help in electing the new coordinator.
+
+⚙️ Execution Steps:
+Compile and run: javac BullyAlgorithm.java, java BullyAlgorithm
+Compile and run: javac RingAlgorithm.java, java RingAlgorithm
+
+🧠 Viva Questions:
+Q1. How does the Bully algorithm work?
+Process with higher ID becomes leader.
+If a process detects failure, it sends election messages to all higher ID processes.
+If none respond, it becomes the leader.
+
+Q2. How does the Ring algorithm work?
+Processes pass an election message in a logical ring.
+Highest ID process becomes leader.
+
+Q3. Why simulate node failure?
+To test that algorithms correctly detect and recover from failures.
+
+Q4. Comparison:
+Feature
+Bully
+Ring
+Communication
+To all higher ID processes
+Only neighbors in the ring
+Speed
+Faster
+Slower
+Complexity
+Higher
+Simpler
+
+
+📌 6. Bully and Ring Election – Code Questions
+📄 Files: BullyAlgorithm.java, RingAlgorithm.java
+
+🔹 Bully Algorithm
+Q1. What happens when node 3 starts election?
+It sends messages to all higher ID nodes (4, 5).
+Since node 5 is dead, 4 may respond and take over.
+If no higher nodes respond, node 3 becomes the leader.
+
+Q2. Explain this condition:
+if (!higherExists) { 
+    System.out.println("Node " + id + " becomes the coordinator.");
+}   —- If no alive node with a higher ID is found, the node declares itself the coordinator.
+
+Q3. How would you simulate node recovery?
+Set isAlive = true for failed node.
+If it has the highest ID, it may initiate a re-election.
+
+🔹 Ring Algorithm
+Q4. Explain this loop:
+while (index != initiator - 1) {....
+    maxId = Math.max(maxId, nodes.get(index).id);
+}  —-- The election message is passed around the ring., The highest ID seen so far is remembered.
+
+Q5. What is the election initiator's role?
+Starts the election process by passing the message to the next live node.
+
+
+
